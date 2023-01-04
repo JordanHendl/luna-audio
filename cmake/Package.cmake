@@ -52,16 +52,15 @@ macro(ConfigurePackaging)
 endmacro()
 
 macro(ExportPackage)
-  #install(TARGETS gfx gfx_interface vulkan_impl gfx_common vma_lib spirv_reflect gfx_extended stb_tools
-  #install(TARGETS luna luna_runtime config plugin io 
-  #        EXPORT luna COMPONENT release
-  #        ARCHIVE  DESTINATION ${EXPORT_LIB_DIR}
-  #        RUNTIME  DESTINATION ${EXPORT_LIB_DIR}
-  #        LIBRARY  DESTINATION ${EXPORT_LIB_DIR}
-  #        INCLUDES DESTINATION ${EXPORT_INCLUDE_DIR} )
-#
-  #install(EXPORT luna FILE luna-config.cmake 
-  #                     DESTINATION cmake 
-  #                     NAMESPACE   luna::
-  #                     COMPONENT   devel )
+install(TARGETS audio audio_interface
+        EXPORT luna-audio COMPONENT release
+        ARCHIVE  DESTINATION ${EXPORT_LIB_DIR}
+        RUNTIME  DESTINATION ${EXPORT_LIB_DIR}
+        LIBRARY  DESTINATION ${EXPORT_LIB_DIR}
+        INCLUDES DESTINATION ${EXPORT_INCLUDE_DIR} )
+
+  install(EXPORT luna-audio FILE luna-audio-config.cmake 
+                       DESTINATION cmake 
+                       NAMESPACE   luna::
+                       COMPONENT   devel )
 endmacro()
