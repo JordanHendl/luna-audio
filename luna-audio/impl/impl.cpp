@@ -12,20 +12,28 @@
 
 namespace luna {
 namespace audio {
-auto enumerate_devices() -> std::vector<std::string> {
+auto enumerate_devices() -> std::unordered_map<std::string, DeviceInfo> {
   auto can_enumerate = false;
-  auto out = std::vector<std::string>();
+  auto out = std::unordered_map<std::string, DeviceInfo>();
 
   can_enumerate = alcIsExtensionPresent(nullptr, "ALC_ENUMERATION_EXT");
 
   if(can_enumerate) {
+    auto default_device = alcGetString(nullptr, ALC_DEFAULT_ALL_DEVICES_SPECIFIER);
     auto devices = alcGetString(nullptr, ALC_ALL_DEVICES_SPECIFIER);
     auto len = 0;
     auto device = devices;
     auto next = devices + 1;
 
     while(device && *device != '\0' && next && *next != '\0') {
-      out.push_back(std::string(device));
+      auto info = DeviceInfo{alcOpenDevice(device)};
+      info.context = alcCreateContext(info.device, nullptr);
+      assert(info.device);
+      assert(info.context);
+      out[std::string(device)] = info;
+      if(std::string(device) == std::string(default_device)) {
+        out["Default"] = info;
+      }
       len = std::strlen(device);
       device += (len+1);
       next +=(len+2);
@@ -35,21 +43,25 @@ auto enumerate_devices() -> std::vector<std::string> {
 }
 
 GlobalResources::GlobalResources() {
-  this->context = nullptr;
-  this->device = nullptr;
-  this->context = alcCreateContext( this->device, nullptr ) ;
-  assert(this->context);
-  assert(alcMakeContextCurrent(this->context));
-
-  this->devices = enumerate_devices();
-
   // Open default system audio device.
-  this->device = alcOpenDevice(nullptr);
-  assert(this->device);
+  //std::cout << "al says default device is :" << alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER) << std::endl;
+  this->devices = enumerate_devices();
+  this->make_device_current("Default");
 }
 
-auto GlobalResources::load_WAV(std::string_view file) -> LoadedAudio {
-    auto out = LoadedAudio();
+auto GlobalResources::make_device_current(std::string_view name) -> void {
+  auto iter = this->devices.find(std::string(name.data()));
+  assert(iter != this->devices.end());
+  if(iter != this->devices.end()) {
+    assert(alcMakeContextCurrent(iter->second.context));
+  }
+}
+
+GlobalResources::~GlobalResources() {}
+
+template<>
+auto GlobalResources::load_WAV(std::string_view file) -> LoadedAudio<std::int16_t> {
+    auto out = LoadedAudio<std::int16_t>();
     auto channels = 0u;
     auto sample_rate = 0u;
     auto count = drwav_uint64();
@@ -61,10 +73,35 @@ auto GlobalResources::load_WAV(std::string_view file) -> LoadedAudio {
     }
     
     auto tmp = drwav__read_pcm_frames_and_close_s16( &wav, &channels, &sample_rate, &count ) ;
-    auto size = wav.totalPCMFrameCount * channels * sizeof(int16_t);
+    auto size = wav.totalPCMFrameCount * channels * sizeof(std::int16_t);
     out.frequency = wav.sampleRate;
     stereo = channels > 1;
     out.format = stereo ? Format::Stereo16 : Format::Mono16;
+    
+    out.audio.resize(size);
+    std::copy(tmp, tmp+size, out.audio.begin());
+    if(out.audio.empty()) out.loaded = true;
+    return out;
+}
+
+template<>
+auto GlobalResources::load_WAV(std::string_view file) -> LoadedAudio<std::int32_t> {
+    auto out = LoadedAudio<std::int32_t>();
+    auto channels = 0u;
+    auto sample_rate = 0u;
+    auto count = drwav_uint64();
+    auto stereo = false;
+    auto wav = drwav();
+
+    if(!drwav_init_file( &wav, file.data(), nullptr)) {
+      return {};
+    }
+    
+    auto tmp = drwav__read_pcm_frames_and_close_s32( &wav, &channels, &sample_rate, &count ) ;
+    auto size = wav.totalPCMFrameCount * channels * sizeof(std::int16_t);
+    out.frequency = wav.sampleRate;
+    stereo = channels > 1;
+    out.format = stereo ? Format::Stereo32 : Format::Mono32;
     
     out.audio.resize(size);
     std::copy(tmp, tmp+size, out.audio.begin());

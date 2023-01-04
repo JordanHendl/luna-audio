@@ -1,6 +1,12 @@
 #pragma once
 namespace luna {
 namespace audio {
+
+// Used to convert from kHz -> Hz
+constexpr auto operator"" _kHz(long double khz) -> long double {
+    return khz * 1000;
+}
+
 enum class FileType {
   WAV,
   FLAC,

@@ -1,4 +1,5 @@
 [requires]
+gtest/cci.20210126
 openal/1.22.2
 
 [generators]    

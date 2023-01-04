@@ -6,7 +6,7 @@ auto get_audio_devices() -> std::vector<Device> {
   auto& res = global_resources();
   auto out = std::vector<Device>();
   for(auto& a : res.devices) {
-    out.push_back({a});
+    out.push_back({a.first});
   }
 
   return out;

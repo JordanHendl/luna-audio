@@ -1,5 +1,5 @@
 {
-  "editor.formatOnSave": true,
+  "editor.formatOnSave": false,
   "files.associations": {
     "string_view": "cpp",
     "*.tcc": "cpp",
@@ -92,6 +92,7 @@
     "xstring": "cpp",
     "xtr1common": "cpp",
     "xtree": "cpp",
-    "xutility": "cpp"
+    "xutility": "cpp",
+    "future": "cpp"
   }
 }
